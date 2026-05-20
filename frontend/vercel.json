@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://tnc-bot-backend.yourdomain.com/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -4,14 +4,19 @@ from pydantic_settings import BaseSettings
 
 def is_running_on_vercel() -> bool:
     # Check all common environment variables for Vercel and AWS Lambda runtimes
-    if any(k in os.environ for k in ["VERCEL", "VERCEL_ENV", "AWS_LAMBDA_FUNCTION_NAME", "LAMBDA_TASK_ROOT"]):
+    env_keys = ["VERCEL", "VERCEL_ENV", "AWS_LAMBDA_FUNCTION_NAME", "LAMBDA_TASK_ROOT"]
+    found_keys = [k for k in env_keys if k in os.environ]
+    print(f"DEBUG: Found Vercel/Lambda env keys: {found_keys}", flush=True)
+    if found_keys:
         return True
     try:
         test_file = Path(".") / "test_write.tmp"
         test_file.touch()
         test_file.unlink()
+        print("DEBUG: Successfully wrote and unlinked test_write.tmp in current directory.", flush=True)
         return False
-    except Exception:
+    except Exception as e:
+        print(f"DEBUG: Failed writing test_write.tmp in current directory: {e}", flush=True)
         return True
 
 def get_db_url() -> str:

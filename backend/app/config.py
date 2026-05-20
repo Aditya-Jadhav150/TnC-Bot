@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-# Create directories if they don't exist
-os.makedirs(Path(__file__).resolve().parent.parent / "uploads", exist_ok=True)
-
 settings = Settings()
+
+# Create directories if they don't exist
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)

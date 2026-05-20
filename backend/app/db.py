@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional
 from app.config import settings
 
 DB_PATH = settings.DATABASE_URL.replace("sqlite:///", "")
+print(f"DEBUG: SQLite Database Path resolved to: {DB_PATH}", flush=True)
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)

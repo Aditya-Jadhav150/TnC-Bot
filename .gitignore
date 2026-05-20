@@ -7,3 +7,6 @@ __pycache__/
 *.db
 .vscode/
 coverage/
+
+venv/
+backend/venv/

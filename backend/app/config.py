@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "TnC Bot"
-    DATABASE_URL: str = "sqlite:///./tnc_bot.db"
+    DATABASE_URL: str = "sqlite:////tmp/tnc_bot.db" if os.environ.get("VERCEL") else "sqlite:///./tnc_bot.db"
     
     # Gemini & OpenAI Settings
     GEMINI_API_KEY: str = ""

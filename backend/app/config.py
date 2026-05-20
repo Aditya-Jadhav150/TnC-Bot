@@ -60,6 +60,12 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
+    def __init__(self, **values):
+        super().__init__(**values)
+        if is_running_on_vercel():
+            self.DATABASE_URL = "sqlite:////tmp/tnc_bot.db"
+            self.UPLOAD_DIR = Path("/tmp/uploads")
+
 settings = Settings()
 
 # Create directories if they don't exist

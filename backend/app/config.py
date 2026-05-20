@@ -15,9 +15,8 @@ class Settings(BaseSettings):
     OPENAI_MODEL_NAME: str = "gpt-4o"
     OPENAI_DISABLED: bool = False      # Dynamic fallback flag on quota errors
     
-    # Directory paths
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
-    UPLOAD_DIR: Path = Path(__file__).resolve().parent.parent / "uploads"
+    UPLOAD_DIR: Path = Path("/tmp/uploads") if os.environ.get("VERCEL") else Path(__file__).resolve().parent.parent / "uploads"
     STATIC_DIR: Path = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
     
     # RAG Settings

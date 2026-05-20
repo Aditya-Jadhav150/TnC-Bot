@@ -2,27 +2,32 @@ import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
 
-def get_db_url() -> str:
-    # Test if the current directory is writable. If not, use /tmp.
+def is_running_on_vercel() -> bool:
+    # Check all common environment variables for Vercel and AWS Lambda runtimes
+    if any(k in os.environ for k in ["VERCEL", "VERCEL_ENV", "AWS_LAMBDA_FUNCTION_NAME", "LAMBDA_TASK_ROOT"]):
+        return True
     try:
         test_file = Path(".") / "test_write.tmp"
         test_file.touch()
         test_file.unlink()
-        return "sqlite:///./tnc_bot.db"
+        return False
     except Exception:
+        return True
+
+def get_db_url() -> str:
+    if is_running_on_vercel():
         return "sqlite:////tmp/tnc_bot.db"
+    return "sqlite:///./tnc_bot.db"
 
 def get_upload_dir() -> Path:
-    # Test if we can write to the default local uploads directory. If not, use /tmp/uploads.
+    if is_running_on_vercel():
+        return Path("/tmp/uploads")
     local_path = Path(__file__).resolve().parent.parent / "uploads"
     try:
         local_path.mkdir(exist_ok=True)
-        test_file = local_path / "test_write.tmp"
-        test_file.touch()
-        test_file.unlink()
-        return local_path
     except Exception:
-        return Path("/tmp/uploads")
+        pass
+    return local_path
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "TnC Bot"

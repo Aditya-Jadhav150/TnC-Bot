@@ -7,6 +7,13 @@ import { GroundedChat } from './components/GroundedChat';
 import { HelpCircle, Sparkles, FolderOpen } from 'lucide-react';
 import { FloatingAssistant } from './components/FloatingAssistant';
 import { API_BASE } from './config';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+interface OverlayPluginType {
+  toggleOverlay(options: { enable: boolean }): Promise<{ status: string }>;
+}
+
+const OverlayPlugin = registerPlugin<OverlayPluginType>('OverlayPlugin');
 
 interface Citation {
   chunk_index: number;
@@ -75,6 +82,15 @@ export default function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Synchronize showBot with native Android overlay
+  useEffect(() => {
+    if (Capacitor.getPlatform() === 'android') {
+      OverlayPlugin.toggleOverlay({ enable: showBot }).catch((err) => {
+        console.error("Failed to toggle native overlay: ", err);
+      });
+    }
+  }, [showBot]);
 
   // App view modes
   const [isUploading, setIsUploading] = useState<boolean>(false);

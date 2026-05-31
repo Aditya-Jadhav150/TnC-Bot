@@ -6,24 +6,39 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.Toast;
 import androidx.core.app.NotificationCompat;
 
 public class OverlayService extends Service {
     private static final int NOTIFICATION_ID = 1001;
     private static final String CHANNEL_ID = "OverlayServiceChannel";
+    
     private WindowManager windowManager;
     private ImageView floatingBubble;
     private WindowManager.LayoutParams params;
     private boolean isBubbleAdded = false;
+
+    // Thread-safe Toast helper for debugging
+    private void showToast(final String text) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getApplicationContext(), "OverlayService: " + text, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -31,45 +46,9 @@ public class OverlayService extends Service {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        createNotificationChannel();
-        
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-            this, 0, notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
-        );
-
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("TnC Bot Overlay")
-            .setContentText("Show Bot bubble is active over other apps.")
-            .setSmallIcon(R.mipmap.ic_launcher) // Use local app launcher icon
-            .setContentIntent(pendingIntent)
-            .build();
-
-        // Android 14+ compatibility check: Special Use type dynamic value is 1073741824 (0x40000000)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // SDK 34 (Android 14+)
-            startForeground(NOTIFICATION_ID, notification, 1073741824); // ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-        } else {
-            startForeground(NOTIFICATION_ID, notification);
-        }
-
-        // CRITICAL Android 16 Fix: Add view only AFTER foreground service state is promoted
-        if (!isBubbleAdded && floatingBubble != null && params != null) {
-            try {
-                windowManager.addView(floatingBubble, params);
-                isBubbleAdded = true;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        return START_STICKY;
-    }
-
-    @Override
     public void onCreate() {
         super.onCreate();
+        showToast("onCreate()");
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
         // Simple floating bubble representing the bot icon
@@ -80,8 +59,20 @@ public class OverlayService extends Service {
         shape.setShape(GradientDrawable.OVAL);
         shape.setColor(0xFF4F46E5); // Indigo-600 brand color
         shape.setStroke(6, 0xFFFFFFFF); // White border
-        floatingBubble.setImageDrawable(shape);
-        floatingBubble.setPadding(12, 12, 12, 12);
+        
+        // IMPORTANT: Set shape as Background, not ImageDrawable, so it scales to fit the layout bounds
+        floatingBubble.setBackground(shape);
+        
+        // Add a system menu message icon inside the bubble for visual premium quality
+        floatingBubble.setImageResource(android.R.drawable.ic_menu_message);
+        // Tint the icon white to look clean and premium
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            floatingBubble.setImageTintList(android.content.res.ColorStateList.valueOf(0xFFFFFFFF));
+        } else {
+            floatingBubble.setColorFilter(0xFFFFFFFF);
+        }
+        
+        floatingBubble.setPadding(16, 16, 16, 16);
 
         int size = (int) (60 * getResources().getDisplayMetrics().density); // 60dp standard size
 
@@ -138,7 +129,57 @@ public class OverlayService extends Service {
         });
     }
 
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        showToast("onStartCommand()");
+        createNotificationChannel();
+        
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+            this, 0, notificationIntent,
+            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+        );
+
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("TnC Bot Overlay")
+            .setContentText("Show Bot bubble is active over other apps.")
+            .setSmallIcon(R.mipmap.ic_launcher) // Use local app launcher icon
+            .setContentIntent(pendingIntent)
+            .build();
+
+        try {
+            // Android 14+ compatibility check: Special Use type dynamic value is 1073741824 (0x40000000)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // SDK 34 (Android 14+)
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                showToast("Started Foreground service with type SPECIAL_USE");
+            } else {
+                startForeground(NOTIFICATION_ID, notification);
+                showToast("Started Foreground service");
+            }
+        } catch (Exception e) {
+            showToast("startForeground error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // CRITICAL Android 16 Fix: Add view only AFTER foreground service state is promoted
+        if (!isBubbleAdded && floatingBubble != null && params != null) {
+            try {
+                windowManager.addView(floatingBubble, params);
+                isBubbleAdded = true;
+                showToast("Overlay view added successfully!");
+            } catch (Exception e) {
+                showToast("addView error: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            showToast("Overlay view addition skipped. Added: " + isBubbleAdded);
+        }
+
+        return START_STICKY;
+    }
+
     private void onBubbleClick() {
+        showToast("Bubble clicked - returning to app");
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         startActivity(intent);
@@ -154,6 +195,7 @@ public class OverlayService extends Service {
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(serviceChannel);
+                showToast("Notification channel created");
             }
         }
     }
@@ -161,11 +203,14 @@ public class OverlayService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        showToast("onDestroy()");
         if (isBubbleAdded && floatingBubble != null) {
             try {
                 windowManager.removeView(floatingBubble);
                 isBubbleAdded = false;
+                showToast("Overlay view removed successfully!");
             } catch (Exception e) {
+                showToast("removeView error: " + e.getMessage());
                 e.printStackTrace();
             }
         }

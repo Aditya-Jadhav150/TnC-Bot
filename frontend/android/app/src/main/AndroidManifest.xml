@@ -41,7 +41,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Overlay control bubble widget for contract reading" />
+                android:value="Overlay control bubble widget for contract reading and interaction" />
         </service>
     </application>
 

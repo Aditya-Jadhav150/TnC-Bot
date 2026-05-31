@@ -63,14 +63,8 @@ public class OverlayService extends Service {
         // IMPORTANT: Set shape as Background, not ImageDrawable, so it scales to fit the layout bounds
         floatingBubble.setBackground(shape);
         
-        // Add a system menu message icon inside the bubble for visual premium quality
-        floatingBubble.setImageResource(android.R.drawable.ic_menu_message);
-        // Tint the icon white to look clean and premium
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            floatingBubble.setImageTintList(android.content.res.ColorStateList.valueOf(0xFFFFFFFF));
-        } else {
-            floatingBubble.setColorFilter(0xFFFFFFFF);
-        }
+        // Add the app launcher icon inside the bubble for visual branding
+        floatingBubble.setImageResource(R.mipmap.ic_launcher);
         
         floatingBubble.setPadding(16, 16, 16, 16);
 

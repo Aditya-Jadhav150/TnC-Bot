@@ -30,15 +30,22 @@ public class OverlayPlugin extends Plugin {
             }
         }
 
-        Intent serviceIntent = new Intent(getContext(), OverlayService.class);
-        if (enable) {
-            getContext().startService(serviceIntent);
-        } else {
-            getContext().stopService(serviceIntent);
+        try {
+            Intent serviceIntent = new Intent(getContext(), OverlayService.class);
+            if (enable) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    getContext().startForegroundService(serviceIntent);
+                } else {
+                    getContext().startService(serviceIntent);
+                }
+            } else {
+                getContext().stopService(serviceIntent);
+            }
+            JSObject ret = new JSObject();
+            ret.put("status", "success");
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("Failed to toggle service: " + e.getMessage(), e);
         }
-
-        JSObject ret = new JSObject();
-        ret.put("status", "success");
-        call.resolve(ret);
     }
 }

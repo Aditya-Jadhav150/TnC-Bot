@@ -45,9 +45,9 @@ public class OverlayService extends Service {
             .setContentIntent(pendingIntent)
             .build();
 
-        // Android 14 compatibility check: Special Use type dynamic value is 1073741824 (0x40000000)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // SDK 34 (Android 14)
-            startForeground(NOTIFICATION_ID, notification, 1073741824); // ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        // Android 14+ compatibility check: Data Sync type dynamic value is 1 (0x00000001)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // SDK 34 (Android 14+)
+            startForeground(NOTIFICATION_ID, notification, 1); // ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
         } else {
             startForeground(NOTIFICATION_ID, notification);
         }

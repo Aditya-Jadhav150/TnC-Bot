@@ -86,9 +86,16 @@ export default function App() {
   // Synchronize showBot with native Android overlay
   useEffect(() => {
     if (Capacitor.getPlatform() === 'android') {
-      OverlayPlugin.toggleOverlay({ enable: showBot }).catch((err) => {
-        console.error("Failed to toggle native overlay: ", err);
-      });
+      OverlayPlugin.toggleOverlay({ enable: showBot })
+        .then((res) => {
+          if (res && res.status === 'permission_required') {
+            setShowBot(false);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to toggle native overlay: ", err);
+          setShowBot(false);
+        });
     }
   }, [showBot]);
 

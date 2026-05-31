@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.PixelFormat;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.IBinder;
 import android.view.Gravity;
@@ -44,7 +45,13 @@ public class OverlayService extends Service {
             .setContentIntent(pendingIntent)
             .build();
 
-        startForeground(NOTIFICATION_ID, notification);
+        // Android 14 compatibility check: Special Use type dynamic value is 1073741824 (0x40000000)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // SDK 34 (Android 14)
+            startForeground(NOTIFICATION_ID, notification, 1073741824); // ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        } else {
+            startForeground(NOTIFICATION_ID, notification);
+        }
+
         return START_STICKY;
     }
 
@@ -55,9 +62,14 @@ public class OverlayService extends Service {
 
         // Simple floating bubble representing the bot icon
         floatingBubble = new ImageView(this);
-        floatingBubble.setImageResource(android.R.drawable.ic_dialog_info); 
-        floatingBubble.setBackgroundColor(0xFF4F46E5); // Indigo brand color
-        floatingBubble.setPadding(24, 24, 24, 24);
+        
+        // Draw a solid circle drawable programmatically for reliability (independent of system resources)
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL);
+        shape.setColor(0xFF4F46E5); // Indigo-600 brand color
+        shape.setStroke(6, 0xFFFFFFFF); // White border
+        floatingBubble.setImageDrawable(shape);
+        floatingBubble.setPadding(12, 12, 12, 12);
 
         int size = (int) (60 * getResources().getDisplayMetrics().density); // 60dp standard size
 
@@ -68,7 +80,7 @@ public class OverlayService extends Service {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 : WindowManager.LayoutParams.TYPE_PHONE,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         );
 

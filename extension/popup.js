@@ -10,16 +10,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   activateBtn.addEventListener('click', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs.length === 0) return;
-      const tabId = tabs[0].id;
+      const tab = tabs[0];
+      const tabId = tab.id;
+      
+      // Safeguard: Check if the page is a restricted browser system page
+      if (tab.url && (
+        tab.url.startsWith('chrome://') || 
+        tab.url.startsWith('chrome-extension://') || 
+        tab.url.startsWith('edge://') || 
+        tab.url.startsWith('about:')
+      )) {
+        alert('The assistant cannot run on internal browser pages. Please open a website (e.g. google.com) and try again!');
+        return;
+      }
       
       // Ping content script to see if it is active
       chrome.tabs.sendMessage(tabId, { action: 'ping' }, (response) => {
-        if (chrome.runtime.lastError || !response || response.status !== 'pong') {
+        // Accessing lastError immediately clears the "Unchecked runtime.lastError" warning in the browser console
+        const err = chrome.runtime.lastError;
+        if (err || !response || response.status !== 'pong') {
+          // If this is a restricted internal chrome:// page, let the user know politely
+          if (err && err.message && (err.message.includes('Cannot access') || err.message.includes('restricted'))) {
+            alert('The assistant cannot run on internal browser pages. Please open a website (e.g. google.com) and try again!');
+            return;
+          }
+          
           // Content script not loaded yet (e.g. page was not refreshed). Ingest programmatically.
           chrome.scripting.executeScript({
             target: { tabId: tabId },
             files: ['content.js']
           }, () => {
+            const execErr = chrome.runtime.lastError;
+            if (execErr) return; // Clear and ignore any execution error
+            
             // Give script a moment to mount and run, then send show signal
             setTimeout(() => {
               chrome.tabs.sendMessage(tabId, { action: 'show_fab' }).catch(() => {});
@@ -33,14 +56,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // 1. Load saved backend URL
-  let savedUrl = 'http://localhost:8000';
-  if (chrome.storage && chrome.storage.local) {
-    const data = await chrome.storage.local.get('backendUrl');
-    if (data.backendUrl) {
-      savedUrl = data.backendUrl;
-    }
-  }
+  // 1. Load saved backend URL (locked to the live hosted Vercel instance)
+  let savedUrl = 'https://tnc-bot.vercel.app';
   
   // Normalize trailing slash
   if (savedUrl.endsWith('/')) {

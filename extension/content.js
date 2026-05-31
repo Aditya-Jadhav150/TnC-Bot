@@ -4,7 +4,7 @@
   if (document.getElementById('tnc-bot-shadow-host')) return;
 
   // 1. Core State
-  let backendUrl = 'http://localhost:8000';
+  let backendUrl = 'https://tnc-bot.vercel.app';
   let activeDoc = null;
   let chatMessages = [];
   let isLoadingChat = false;
@@ -18,10 +18,9 @@
 
   // 2. Load Configuration from Storage
   if (chrome.storage && chrome.storage.local) {
-    chrome.storage.local.get(['backendUrl', 'floating-assistant-position-ext'], (data) => {
-      if (data.backendUrl) {
-        backendUrl = data.backendUrl;
-      }
+    chrome.storage.local.get(['floating-assistant-position-ext'], (data) => {
+      // Locked to the live hosted Vercel instance
+      backendUrl = 'https://tnc-bot.vercel.app';
       if (data['floating-assistant-position-ext']) {
         try {
           const savedPos = JSON.parse(data['floating-assistant-position-ext']);

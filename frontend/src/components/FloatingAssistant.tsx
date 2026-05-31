@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, X, MessageSquare, Maximize2, Send, Terminal } from 'lucide-react';
+import { API_BASE } from '../config';
 
 interface Citation {
   chunk_index: number;
@@ -236,7 +237,7 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({
     }
 
     try {
-      const response = await fetch('/api/analyze/text', {
+      const response = await fetch(`${API_BASE}/api/analyze/text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -289,7 +290,7 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({
       const assistantMsgIndex = chatMessages.length + 1;
       setChatMessages((prev) => [...prev, { role: 'assistant', content: '', citations: [] }]);
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

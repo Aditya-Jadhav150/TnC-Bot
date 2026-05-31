@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, X, Check, Loader2 } from 'lucide-react';
+import { API_BASE } from '../config';
 
 interface DocumentViewerProps {
   text: string;
@@ -93,7 +94,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     setExplanationText(null);
 
     try {
-      const response = await fetch('/api/explain', {
+      const response = await fetch(`${API_BASE}/api/explain`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

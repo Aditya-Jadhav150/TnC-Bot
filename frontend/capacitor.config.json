@@ -1,0 +1,8 @@
+{
+  "appId": "com.tncbot.app",
+  "appName": "TnC Bot",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

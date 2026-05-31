@@ -6,6 +6,7 @@ import { DocumentViewer } from './components/DocumentViewer';
 import { GroundedChat } from './components/GroundedChat';
 import { HelpCircle, Sparkles, FolderOpen } from 'lucide-react';
 import { FloatingAssistant } from './components/FloatingAssistant';
+import { API_BASE } from './config';
 
 interface Citation {
   chunk_index: number;
@@ -81,7 +82,7 @@ export default function App() {
 
   const fetchDocumentsHistory = async () => {
     try {
-      const response = await fetch('/api/documents');
+      const response = await fetch(`${API_BASE}/api/documents`);
       if (response.ok) {
         const data = await response.json();
         setDocuments(data);
@@ -97,7 +98,7 @@ export default function App() {
     setChatMessages([]);
     setRightPanelTab('dashboard');
     try {
-      const response = await fetch(`/api/documents/${id}`);
+      const response = await fetch(`${API_BASE}/api/documents/${id}`);
       if (response.ok) {
         const doc = await response.json();
         setActiveDoc(doc);
@@ -105,7 +106,7 @@ export default function App() {
         setIsUploading(false);
         
         // Fetch versions history
-        const vResponse = await fetch(`/api/documents/${id}/versions`);
+        const vResponse = await fetch(`${API_BASE}/api/documents/${id}/versions`);
         if (vResponse.ok) {
           const vData = await vResponse.json();
           setVersions(vData);
@@ -121,7 +122,7 @@ export default function App() {
   const handleAnalyzeText = async (name: string, text: string, category: string) => {
     setIsLoadingAnalysis(true);
     try {
-      const response = await fetch('/api/analyze/text', {
+      const response = await fetch(`${API_BASE}/api/analyze/text`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +163,7 @@ export default function App() {
       formData.append('file', file);
       formData.append('category', category);
 
-      const response = await fetch('/api/analyze/pdf', {
+      const response = await fetch(`${API_BASE}/api/analyze/pdf`, {
         method: 'POST',
         body: formData,
       });
@@ -180,7 +181,7 @@ export default function App() {
       await fetchDocumentsHistory();
       
       // Fetch versions
-      const vResponse = await fetch(`/api/documents/${newDoc.id}/versions`);
+      const vResponse = await fetch(`${API_BASE}/api/documents/${newDoc.id}/versions`);
       if (vResponse.ok) {
         const vData = await vResponse.json();
         setVersions(vData);
@@ -208,7 +209,7 @@ export default function App() {
       const assistantMsgIndex = chatMessages.length + 1;
       setChatMessages((prev) => [...prev, { role: 'assistant', content: '', citations: [] }]);
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

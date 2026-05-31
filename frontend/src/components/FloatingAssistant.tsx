@@ -87,7 +87,7 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({
     return { x: window.innerWidth - 80, y: window.innerHeight - 80 };
   });
 
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(true);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);

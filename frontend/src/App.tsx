@@ -63,6 +63,19 @@ export default function App() {
   const [activeDoc, setActiveDoc] = useState<Document | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
   
+  // Show Bot toggle state
+  const [showBot, setShowBot] = useState<boolean>(false);
+
+  // Responsive layout state
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
+  const [mobileTab, setMobileTab] = useState<'reader' | 'summary' | 'chat'>('reader');
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // App view modes
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState<boolean>(false);
@@ -314,6 +327,8 @@ export default function App() {
         onUploadClick={handleUploadClick}
         isLoading={isLoadingAnalysis}
         versionCount={versions.length}
+        showBot={showBot}
+        onToggleShowBot={setShowBot}
       />
 
       {/* Main Container */}
@@ -343,72 +358,143 @@ export default function App() {
             </div>
           </div>
         ) : (
-          /* State B: Document Workspace Side-by-Side Panels */
-          <div className="h-full flex overflow-hidden">
-            {/* Left Side: Document Reader (Scrolls text and highlights matches) */}
-            <div className="w-1/2 p-4 pr-2 h-full flex flex-col min-w-0">
-              <DocumentViewer
-                text={activeDoc!.content}
-                highlightSnippet={highlightSnippet}
-                onClearHighlight={handleClearHighlight}
-              />
-            </div>
-
-            {/* Right Side: Tabbed Analysis Pane */}
-            <div className="w-1/2 p-4 pl-2 h-full flex flex-col min-w-0">
-              {/* Workspace Navigation Tabs */}
-              <div className="flex gap-1 bg-slate-900 border border-slate-800 p-1 rounded-lg mb-3 shrink-0 self-start">
-                <button
-                  onClick={() => setRightPanelTab('dashboard')}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${
-                    rightPanelTab === 'dashboard'
-                      ? 'bg-brand-600 text-white shadow'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Quick Understand</span>
-                </button>
-                <button
-                  onClick={() => setRightPanelTab('chat')}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${
-                    rightPanelTab === 'chat'
-                      ? 'bg-brand-600 text-white shadow'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <HelpCircle className="w-3.5 h-3.5" />
-                  <span>Ask Assistant</span>
-                </button>
-              </div>
-
-              {/* Active Tab Panel */}
-              <div className="flex-1 min-h-0">
-                {rightPanelTab === 'dashboard' && activeDoc!.summary && (
-                  <QuickUnderstand
-                    summaryData={activeDoc!.summary}
-                    onLocateClause={handleLocateClause}
+          /* State B: Document Workspace responsive layout */
+          isMobile ? (
+            <div className="h-full flex flex-col overflow-hidden">
+              {/* Active Mobile Panel View */}
+              <div className="flex-1 overflow-hidden min-h-0 p-3">
+                {mobileTab === 'reader' && (
+                  <DocumentViewer
+                    text={activeDoc!.content}
+                    highlightSnippet={highlightSnippet}
+                    onClearHighlight={handleClearHighlight}
                   />
                 )}
-                {rightPanelTab === 'chat' && (
+                {mobileTab === 'summary' && activeDoc!.summary && (
+                  <QuickUnderstand
+                    summaryData={activeDoc!.summary}
+                    onLocateClause={(snippet) => {
+                      handleLocateClause(snippet);
+                      setMobileTab('reader'); // navigate back to reader to show highlight
+                    }}
+                  />
+                )}
+                {mobileTab === 'chat' && (
                   <GroundedChat
                     messages={chatMessages}
                     onSendMessage={handleSendMessage}
                     isLoading={isLoadingChat}
-                    onHighlightCitation={handleLocateClause}
+                    onHighlightCitation={(snippet) => {
+                      handleLocateClause(snippet);
+                      setMobileTab('reader'); // navigate back to reader to show highlight
+                    }}
                   />
                 )}
               </div>
+
+              {/* Mobile Bottom Tab Selection Menu */}
+              <div className="shrink-0 bg-slate-900 border-t border-slate-800 grid grid-cols-3 p-1">
+                <button
+                  onClick={() => setMobileTab('reader')}
+                  className={`py-2.5 text-center rounded-lg flex flex-col items-center justify-center transition-all ${
+                    mobileTab === 'reader'
+                      ? 'text-brand-400 bg-slate-950/40 font-semibold'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="text-[11px] uppercase tracking-wider font-bold">📄 Reader</span>
+                </button>
+                <button
+                  onClick={() => setMobileTab('summary')}
+                  className={`py-2.5 text-center rounded-lg flex flex-col items-center justify-center transition-all ${
+                    mobileTab === 'summary'
+                      ? 'text-brand-400 bg-slate-950/40 font-semibold'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="text-[11px] uppercase tracking-wider font-bold">✨ Summary</span>
+                </button>
+                <button
+                  onClick={() => setMobileTab('chat')}
+                  className={`py-2.5 text-center rounded-lg flex flex-col items-center justify-center transition-all ${
+                    mobileTab === 'chat'
+                      ? 'text-brand-400 bg-slate-950/40 font-semibold'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="text-[11px] uppercase tracking-wider font-bold">💬 Chat</span>
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="h-full flex overflow-hidden">
+              {/* Left Side: Document Reader (Scrolls text and highlights matches) */}
+              <div className="w-1/2 p-4 pr-2 h-full flex flex-col min-w-0">
+                <DocumentViewer
+                  text={activeDoc!.content}
+                  highlightSnippet={highlightSnippet}
+                  onClearHighlight={handleClearHighlight}
+                />
+              </div>
+
+              {/* Right Side: Tabbed Analysis Pane */}
+              <div className="w-1/2 p-4 pl-2 h-full flex flex-col min-w-0">
+                {/* Workspace Navigation Tabs */}
+                <div className="flex gap-1 bg-slate-900 border border-slate-800 p-1 rounded-lg mb-3 shrink-0 self-start">
+                  <button
+                    onClick={() => setRightPanelTab('dashboard')}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${
+                      rightPanelTab === 'dashboard'
+                        ? 'bg-brand-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span>Quick Understand</span>
+                  </button>
+                  <button
+                    onClick={() => setRightPanelTab('chat')}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${
+                      rightPanelTab === 'chat'
+                        ? 'bg-brand-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>Ask Assistant</span>
+                  </button>
+                </div>
+
+                {/* Active Tab Panel */}
+                <div className="flex-1 min-h-0">
+                  {rightPanelTab === 'dashboard' && activeDoc!.summary && (
+                    <QuickUnderstand
+                      summaryData={activeDoc!.summary}
+                      onLocateClause={handleLocateClause}
+                    />
+                  )}
+                  {rightPanelTab === 'chat' && (
+                    <GroundedChat
+                      messages={chatMessages}
+                      onSendMessage={handleSendMessage}
+                      isLoading={isLoadingChat}
+                      onHighlightCitation={handleLocateClause}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          )
         )}
       </main>
 
-      <FloatingAssistant
-        activeDoc={activeDoc}
-        onOpenFullWorkspace={handleSelectDocument}
-        onRefreshHistory={fetchDocumentsHistory}
-      />
+      {showBot && (
+        <FloatingAssistant
+          activeDoc={activeDoc}
+          onOpenFullWorkspace={handleSelectDocument}
+          onRefreshHistory={fetchDocumentsHistory}
+        />
+      )}
     </div>
   );
 }

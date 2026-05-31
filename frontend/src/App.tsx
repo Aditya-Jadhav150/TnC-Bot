@@ -5,7 +5,6 @@ import { QuickUnderstand } from './components/QuickUnderstand';
 import { DocumentViewer } from './components/DocumentViewer';
 import { GroundedChat } from './components/GroundedChat';
 import { HelpCircle, Sparkles, FolderOpen } from 'lucide-react';
-import { FloatingAssistant } from './components/FloatingAssistant';
 import { API_BASE } from './config';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
@@ -15,53 +14,14 @@ interface OverlayPluginType {
 
 const OverlayPlugin = registerPlugin<OverlayPluginType>('OverlayPlugin');
 
-// Custom in-app console logging interception system
-interface DebugLog {
-  type: 'log' | 'warn' | 'error';
-  text: string;
-  time: string;
-}
-
-const capturedLogs: DebugLog[] = [];
-const logListeners: Array<() => void> = [];
-
-const addDebugLog = (type: 'log' | 'warn' | 'error', text: string) => {
-  capturedLogs.push({ type, text, time: new Date().toLocaleTimeString() });
-  if (capturedLogs.length > 250) {
-    capturedLogs.shift();
-  }
-  logListeners.forEach(listener => listener());
-};
-
-const originalLog = console.log;
-const originalWarn = console.warn;
-const originalError = console.error;
-
-console.log = (...args: any[]) => {
-  originalLog.apply(console, args);
-  addDebugLog('log', args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '));
-};
-
-console.warn = (...args: any[]) => {
-  originalWarn.apply(console, args);
-  addDebugLog('warn', args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '));
-};
-
-console.error = (...args: any[]) => {
-  originalError.apply(console, args);
-  addDebugLog('error', args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '));
-};
-
-// Global unhandled error handlers
+// Global unhandled error handlers for device debugging
 window.addEventListener('error', (event) => {
   const errMsg = `${event.message} at ${event.filename}:${event.lineno}`;
-  addDebugLog('error', `Global Exception: ${errMsg}`);
   alert(`JS Global Error:\n${errMsg}`);
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   const reason = event.reason instanceof Error ? event.reason.stack || event.reason.message : String(event.reason);
-  addDebugLog('error', `Unhandled Promise Rejection: ${reason}`);
   alert(`Promise Rejection:\n${reason}`);
 });
 
@@ -124,22 +84,7 @@ export default function App() {
   // Show Bot toggle state
   const [showBot, setShowBot] = useState<boolean>(false);
 
-  // Debug Console States
-  const [showConsole, setShowConsole] = useState<boolean>(false);
-  const [logs, setLogs] = useState<DebugLog[]>([]);
 
-  useEffect(() => {
-    // Synchronize initial logs
-    setLogs([...capturedLogs]);
-    const handleLogUpdate = () => {
-      setLogs([...capturedLogs]);
-    };
-    logListeners.push(handleLogUpdate);
-    return () => {
-      const idx = logListeners.indexOf(handleLogUpdate);
-      if (idx > -1) logListeners.splice(idx, 1);
-    };
-  }, []);
 
   // Responsive layout state
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
@@ -425,8 +370,6 @@ export default function App() {
         versionCount={versions.length}
         showBot={showBot}
         onToggleShowBot={setShowBot}
-        showConsole={showConsole}
-        onToggleConsole={setShowConsole}
       />
 
 
@@ -587,61 +530,7 @@ export default function App() {
         )}
       </main>
 
-      {showBot && (
-        <FloatingAssistant
-          activeDoc={activeDoc}
-          onOpenFullWorkspace={handleSelectDocument}
-          onRefreshHistory={fetchDocumentsHistory}
-        />
-      )}
 
-      {showConsole && (
-        <div className="fixed bottom-0 left-0 right-0 h-64 bg-slate-950 border-t border-slate-800 shadow-2xl z-50 flex flex-col font-mono text-[11px] text-slate-300">
-          {/* Console Header */}
-          <div className="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-800 select-none shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-              <span className="font-bold uppercase tracking-wider text-slate-400">System Debug Console</span>
-            </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => {
-                  capturedLogs.length = 0;
-                  setLogs([]);
-                }}
-                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] transition-all cursor-pointer font-semibold"
-              >
-                Clear Logs
-              </button>
-              <button 
-                onClick={() => setShowConsole(false)}
-                className="px-2 py-1 bg-slate-800 hover:bg-rose-950/40 hover:text-rose-400 text-slate-300 rounded text-[10px] transition-all cursor-pointer font-semibold"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-          {/* Console Logs */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-1.5 min-h-0 select-text selection:bg-indigo-500/30">
-            {logs.length === 0 ? (
-              <div className="text-slate-500 italic text-center py-8">No system logs captured yet. Toggle Show Bot or analyze a contract to record events.</div>
-            ) : (
-              logs.map((log, idx) => (
-                <div key={idx} className="flex gap-2 items-start leading-5 break-all border-b border-slate-900 pb-1">
-                  <span className="text-slate-500 shrink-0 select-none">[{log.time}]</span>
-                  <span className={
-                    log.type === 'error' ? 'text-rose-400 font-semibold' :
-                    log.type === 'warn' ? 'text-amber-400 font-semibold' :
-                    'text-emerald-400 font-normal'
-                  }>
-                    {log.type === 'error' ? '🔴' : log.type === 'warn' ? '⚠️' : '🟢'} {log.text}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

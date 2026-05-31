@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, FileText, Upload, Clock, Layers, Bug } from 'lucide-react';
+import { Shield, FileText, Upload, Clock, Layers } from 'lucide-react';
 
 interface DocumentInfo {
   id: string;
@@ -18,8 +18,6 @@ interface WorkspaceHeaderProps {
   versionCount: number;
   showBot: boolean;
   onToggleShowBot: (val: boolean) => void;
-  showConsole: boolean;
-  onToggleConsole: (val: boolean) => void;
 }
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
@@ -30,9 +28,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   isLoading,
   versionCount,
   showBot,
-  onToggleShowBot,
-  showConsole,
-  onToggleConsole
+  onToggleShowBot
 }) => {
   const activeDoc = documents.find(d => d.id === selectedDocId);
 
@@ -122,18 +118,6 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           <span>Show Bot</span>
         </button>
 
-        <button
-          onClick={() => onToggleConsole(!showConsole)}
-          className={`flex items-center gap-1.5 border font-semibold text-xs px-3 py-2 rounded-lg transition-all cursor-pointer shrink-0 ${
-            showConsole
-              ? 'bg-amber-600 border-amber-500 text-white shadow-soft shadow-amber-500/20'
-              : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850'
-          }`}
-          title={showConsole ? "Hide Debug Logs" : "Show Debug Logs"}
-        >
-          <Bug className="w-3.5 h-3.5 text-amber-500" />
-          <span>Logs</span>
-        </button>
 
         <button
           onClick={onUploadClick}

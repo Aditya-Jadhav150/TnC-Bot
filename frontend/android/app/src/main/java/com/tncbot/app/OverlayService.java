@@ -22,6 +22,8 @@ public class OverlayService extends Service {
     private static final String CHANNEL_ID = "OverlayServiceChannel";
     private WindowManager windowManager;
     private ImageView floatingBubble;
+    private WindowManager.LayoutParams params;
+    private boolean isBubbleAdded = false;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -41,15 +43,25 @@ public class OverlayService extends Service {
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("TnC Bot Overlay")
             .setContentText("Show Bot bubble is active over other apps.")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.mipmap.ic_launcher) // Use local app launcher icon
             .setContentIntent(pendingIntent)
             .build();
 
-        // Android 14+ compatibility check: Data Sync type dynamic value is 1 (0x00000001)
+        // Android 14+ compatibility check: Special Use type dynamic value is 1073741824 (0x40000000)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // SDK 34 (Android 14+)
-            startForeground(NOTIFICATION_ID, notification, 1); // ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            startForeground(NOTIFICATION_ID, notification, 1073741824); // ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         } else {
             startForeground(NOTIFICATION_ID, notification);
+        }
+
+        // CRITICAL Android 16 Fix: Add view only AFTER foreground service state is promoted
+        if (!isBubbleAdded && floatingBubble != null && params != null) {
+            try {
+                windowManager.addView(floatingBubble, params);
+                isBubbleAdded = true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         return START_STICKY;
@@ -74,21 +86,19 @@ public class OverlayService extends Service {
         int size = (int) (60 * getResources().getDisplayMetrics().density); // 60dp standard size
 
         // Setting layout parameters for overlay
-        final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+        params = new WindowManager.LayoutParams(
             size,
             size,
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 : WindowManager.LayoutParams.TYPE_PHONE,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         );
 
         params.gravity = Gravity.TOP | Gravity.START;
         params.x = 200;
         params.y = 200;
-
-        windowManager.addView(floatingBubble, params);
 
         // Implement drag and drop & click actions
         floatingBubble.setOnTouchListener(new View.OnTouchListener() {
@@ -151,8 +161,13 @@ public class OverlayService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (floatingBubble != null) {
-            windowManager.removeView(floatingBubble);
+        if (isBubbleAdded && floatingBubble != null) {
+            try {
+                windowManager.removeView(floatingBubble);
+                isBubbleAdded = false;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }
